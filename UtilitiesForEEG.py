@@ -176,3 +176,30 @@ def spectrum(sig, time_scale, abs=True):
     else:
         raise ValueError("Inappropriate type or shape of one of the arguments. Please read carefully function docstring.")
 
+# SIMPLE CALCULATIONS
+def create_time_scale(n_samples, sf, unit='s'):
+    """Create one-dimensional time scale.
+
+    Parameters
+    ----------
+    n_samples : int
+        Total number of samples in the signal for which time scale has to be created.
+    sf : int
+        Sampling frequency of the signal, ie. samples per second.
+    unit : str
+        Time unit in which time scale has to be expressed. Available units: hours 'h', minutes 'min', seconds 's',
+        milliseconds 'ms', microseconds 'us', nanoseconds 'ns'. Default value is 's'.
+    
+    Returns
+    -------
+    time_scale : 1D np.ndarray
+        One-dimensional time scale with values expressed in a specific time unit.
+    """
+    if isinstance(n_samples, int) and isinstance(sf, int) and unit in ['h', 'min', 's', 'ms', 'us', 'ns']:
+        unit_convertion = {'h':3600, 'min':60, 's':1, 'ms':0.001, 'us':0.000001, 'ns':0.000000001}
+        total_time_in_unit = (n_samples / sf) / unit_convertion[unit]
+        dt = (1 / sf) / unit_convertion[unit]
+        time_scale = np.arange(0, total_time_in_unit, dt)
+        return time_scale
+    else:
+        raise ValueError("Innapriopriate type or value of one of the arguments. Please read carefully function docstring.")
