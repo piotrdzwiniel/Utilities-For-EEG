@@ -121,7 +121,7 @@ def remove_current_pulse_artifacts(sig, markers, window, n_draws, return_artifac
         Collection of the stored artifacts.
     """
     if (isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(markers, np.ndarray) and markers.ndim == 1 
-        and ndarray_contains_only(markers, np.array([0, 1])) and sig.size == markers == size and len(window) in range(1, 3) 
+        and ndarray_contains_only(markers, np.array([0, 1])) and sig.size == markers.size and len(window) in range(1, 3) 
         and list_is_int(window) and isinstance(n_draws, int) and n_draws >= 1):
 
         # Extract artifacts.
