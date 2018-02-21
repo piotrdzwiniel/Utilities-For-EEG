@@ -9,6 +9,128 @@ import scipy.signal as scisig
 import numpy as np
 import scipy.fftpack as scifft
 
+# ARTIFACTS REMOVAL
+def remove_current_pulse_artifacts(sig, markers, window, n_draws, return_artifacts=False):
+    """Remove current pulse artifacts from one-dimensional signal based on artifacts occurences represented
+    by one-dimensional markers signal. Current pulse artifacts removal is performed in following steps:
+    1. Extract current pulse artifacts from 'sig' based on 'markers' which contains ones and zeros, whereas ones
+    indicate current pulse artifact occurences. 
+    2. Extraction is performed around the artifact occurence in accordance to range described by 'window'.
+    3. Extracted artifacts are stored in two-dimensional numpy.ndarray.
+    4. We draw from stored artifacts 'n_draws' without repetition and average them in order to get averaged
+    representation of current pulse artifact.
+    5. We substract this averaged artifact representation from the first occurence of the artifact in 'sig'.
+    6. We now repeat steps 4 and 5 for all next subsequent artifact occurences in 'sig'.
+
+    Parameters
+    ----------
+    sig : 1D numpy.ndarray
+        One-dimensional signal with the occurences of current pulse artifacts.
+    markers : 1D numpy.ndarray
+        One-dimensional signal consisted of ones and zeros, where ones correspond to the exact sample occurences 
+        of current pulse artifact in 'sig'. That's why 'markers'.size' must equal to 'sig.size'.
+    window : list of int of length 2
+        List consisted of two values describing sample range (window) of the current pulse artifact around 
+        its occurence.
+    n_draws : int
+        Number of draws from the collection of stored artifacts. Must be >= 1.
+    return_artifacts : boolean
+        If True, beside of cleared signal, function will return also collection of the stored artifacts. Default value
+        is False.
+
+    Returns
+    -------
+    cleared : 1D numpy.ndarray
+        Cleared signal.
+    artifacts : 2D numpy.ndarray
+        Collection of the stored artifacts.
+    """
+    if isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(markers, np.ndarray) and markers.ndim == 1
+        and not np.any(markers > 1) and sig.size == markers.size and len(window) in range(1, 3)
+        and list_is_int(window) and isinstance(n_draws, int) and n_draws >= 1:
+
+        # Extract artifacts.
+        artifacts = []
+        iterator = 0
+        for marker in markers:
+            if marker == 1:
+                artifacts.append(sig[iterator-window[0]:iterator+window[1]])
+            iterator += 1
+        artifacts = np.asarray(artifacts)
+
+        # Remove artifacts from the signal.
+        iterator = 0
+        for marker in markers:
+            if marker == 1:
+                random_artifact_indices = np.random.choice(np.arange(artifacts.size), n_draws, replace=False)
+                avg_artifact = np.mean(np.take(artifacts, random_artifact_indices, axis=0), axis=0)
+                sig[iterator-window[0]:iterator+window[1]] -= avg_artifact
+            iterator += 1
+        cleared = sig
+        
+        # Return cleared signal and extracted artifacts.
+        if return_artifacts:
+            return cleared, artifacts
+        else:
+            return cleared
+    else:
+        raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
+
+# EXPLORATION AND MARKING
+def mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-right'):
+    """Create 1D-array of zeros and ones, where ones indicate places where photodiode signal exceeds some
+    specific threshold value. This 1D-array is the same length as photodiode signal.
+    
+    Parameters
+    ----------
+    sig : 1D numpy.ndarray
+        Photodiode signal.
+    threshold : float
+        Threshold value above which photodiode signal will be marked.
+    wait_n_samples : int
+        Wait n samples after last marker before trying to put next marker. Must be >= 0.
+    direction : str
+        Direction in which photodiode signal course will be analyzed and marked. There are three directions, ie.
+        'left-to-right', 'right-to-left', 'both'. In case of 'both' photodiode signal course will be first analyzed
+        'left-to-right' and than 'right-to-left'. Default value is 'left-to-right'.
+    
+    Returns
+    -------
+    markers : 1D numpy.ndarray
+        Array of zeros and ones, where ones are markers.
+    """
+    if isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(threshold, float) and isinstance(wait_n_samples, int)
+        and wait_n_samples >= 0 and direction in ['left-to-right', 'right-to-left', 'both']:
+        if direction == 'left-to-right':
+            markers = np.zeros(len(sig))
+            iterator = 0
+            wait_until_next_mark = wait_n_samples
+            for sample in sig:
+                if sample > threshold and wait_until_next_mark >= wait_n_samples:
+                    markers[iterator] = 1
+                    wait_until_next_mark = 0
+                iterator += 1
+                wait_until_next_mark += 1
+            return markers
+        elif direction == 'right-to-left':
+            markers = np.zeros(len(sig))
+            iterator = len(sig)
+            wait_until_next_mark = wait_n_samples
+            for sample in reversed(sig):
+                if sample > threshold and wait_until_next_mark >= wait_n_samples:
+                    markers[iterator] = 1
+                    wait_until_next_mark = 0
+                iterator -= 1
+                wait_until_next_mark += 1
+            return markers
+        else:
+            markers_left_to_right = mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-right')
+            markers_right_to_left = mark_photodiode_changes(sig, threshold, wait_n_samples, direction='right-to-left')
+            markers = markers_left_to_right + markers_right_to_left
+            return markers
+    else:
+        raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
+
 # FILTERING, SMOOTHING, UP- AND DOWNSAMPLING
 def filtfilt_butterworth(sig, sf, cf, order=1, btype='bandpass'):
     """Two-sided Butterworth filter.
@@ -90,61 +212,6 @@ def downsample(sig, d_factor):
     else:
         raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
 
-# EXPLORATION AND MARKING
-def mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-right'):
-    """Create 1D-array of zeros and ones, where ones indicate places where photodiode signal exceeds some
-    specific threshold value. This 1D-array is the same length as photodiode signal.
-    
-    Parameters
-    ----------
-    sig : 1D numpy.ndarray
-        Photodiode signal.
-    threshold : float
-        Threshold value above which photodiode signal will be marked.
-    wait_n_samples : int
-        Wait n samples after last marker before trying to put next marker. Must be >= 0.
-    direction : str
-        Direction in which photodiode signal course will be analyzed and marked. There are three directions, ie.
-        'left-to-right', 'right-to-left', 'both'. In case of 'both' photodiode signal course will be first analyzed
-        'left-to-right' and than 'right-to-left'. Default value is 'left-to-right'.
-    
-    Returns
-    -------
-    markers : 1D numpy.ndarray
-        Array of zeros and ones, where ones are markers.
-    """
-    if isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(threshold, float) and isinstance(wait_n_samples, int)
-        and wait_n_samples >= 0 and direction in ['left-to-right', 'right-to-left', 'both']:
-        if direction == 'left-to-right':
-            markers = np.zeros(len(sig))
-            iterator = 0
-            wait_until_next_mark = wait_n_samples
-            for sample in sig:
-                if sample > threshold and wait_until_next_mark >= wait_n_samples:
-                    markers[iterator] = 1
-                    wait_until_next_mark = 0
-                iterator += 1
-                wait_until_next_mark += 1
-            return markers
-        elif direction == 'right-to-left':
-            markers = np.zeros(len(sig))
-            iterator = len(sig)
-            wait_until_next_mark = wait_n_samples
-            for sample in reversed(sig):
-                if sample > threshold and wait_until_next_mark >= wait_n_samples:
-                    markers[iterator] = 1
-                    wait_until_next_mark = 0
-                iterator -= 1
-                wait_until_next_mark += 1
-            return markers
-        else:
-            markers_left_to_right = mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-right')
-            markers_right_to_left = mark_photodiode_changes(sig, threshold, wait_n_samples, direction='right-to-left')
-            markers = markers_left_to_right + markers_right_to_left
-            return markers
-    else:
-        raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
-
 # TRANSFORMATIONS
 def spectrum(sig, time_scale, abs=True):
     """Compute the one-dimensional Discrete Fourier Transform (DFT) for given N-dimensional signal.
@@ -203,3 +270,24 @@ def create_time_scale(n_samples, sf, unit='s'):
         return time_scale
     else:
         raise ValueError("Innapriopriate type or value of one of the arguments. Please read carefully function docstring.")
+
+def list_is_int(list_of_ints):
+    """Check whether given list contains only int values.
+
+    Parameters
+    ----------
+    list_of_ints : list
+        List of presumably only int values.
+
+    Returns
+    -------
+    verdict : boolean
+        Return True, if 'list_of_ints" contains only in values. Otherwise, return False.
+    """
+    if isinstance(list_of_ints, list) and len(list_of_ints) > 0:
+        for item in list_of_ints:
+            if not isinstance(item, int):
+                return False
+        return True 
+    else:
+        raise ValueError("Inappropriate type or size of the argument.")
