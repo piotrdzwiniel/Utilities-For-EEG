@@ -9,81 +9,6 @@ import scipy.signal as scisig
 import numpy as np
 import scipy.fftpack as scifft
 
-# SIMPLE CALCULATIONS
-def create_time_scale(n_samples, sf, unit='s'):
-    """Create one-dimensional time scale.
-
-    Parameters
-    ----------
-    n_samples : int
-        Total number of samples in the signal for which time scale has to be created.
-    sf : int
-        Sampling frequency of the signal, ie. samples per second.
-    unit : str
-        Time unit in which time scale has to be expressed. Available units: hours 'h', minutes 'min', seconds 's',
-        milliseconds 'ms', microseconds 'us', nanoseconds 'ns'. Default value is 's'.
-    
-    Returns
-    -------
-    time_scale : 1D np.ndarray
-        One-dimensional time scale with values expressed in a specific time unit.
-    """
-    if (isinstance(n_samples, int) and isinstance(sf, int) and unit in ['h', 'min', 's', 'ms', 'us', 'ns']):
-        unit_convertion = {'h':3600, 'min':60, 's':1, 'ms':0.001, 'us':0.000001, 'ns':0.000000001}
-        total_time_in_unit = (n_samples / sf) / unit_convertion[unit]
-        dt = (1 / sf) / unit_convertion[unit]
-        time_scale = np.arange(0, total_time_in_unit, dt)
-        return time_scale
-    else:
-        raise ValueError("Innapriopriate type or value of one of the arguments. Please read carefully function docstring.")
-
-def list_is_int(list_of_ints):
-    """Check whether given list contains only int values.
-
-    Parameters
-    ----------
-    list_of_ints : list
-        List of presumably only int values.
-
-    Returns
-    -------
-    verdict : boolean
-        Return True, if 'list_of_ints" contains only in values. Otherwise, return False.
-    """
-    if (isinstance(list_of_ints, list) and len(list_of_ints) > 0):
-        for item in list_of_ints:
-            if not isinstance(item, int):
-                return False
-        return True 
-    else:
-        raise ValueError("Inappropriate type or size of the argument.")
-
-def ndarray_contains_only(ndarray, values):
-    """Check whether numpy.ndarray contains only some specific values.
-
-    Parameters
-    ----------
-    ndarray : numpy.ndarray
-        One-dimensional array.
-    values : 1D numpy.ndarray
-        One-dimensional array with values to check whether they occur in 'ndarray'.
-
-    Returns
-    -------
-    verdict : boolean
-        Return True, if 'ndarray' contains only 'values'. Otherwise, return False.
-
-    """
-    if (isinstance(ndarray, np.ndarray) and ndarray.ndim == 1 and isinstance(values, np.ndarray) and values.ndim == 1):
-        mask = np.isin(ndarray, values)
-        matches = np.sum(mask)
-        if matches != ndarray.size:
-            return False
-        else:
-            return True
-    else:
-        raise ValueError("Inappropriate type or shape of the argument.")
-
 # ARTIFACTS REMOVAL
 def remove_current_pulse_artifacts(sig, markers, window, n_draws, return_artifacts=False):
     """Remove current pulse artifacts from one-dimensional signal based on artifacts occurences represented
@@ -207,6 +132,27 @@ def mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-r
         raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
 
 # FILTERING, SMOOTHING, UP- AND DOWNSAMPLING
+def downsample(sig, d_factor):
+    """Downsample one-dimensional signal with the use of reshaping.
+
+    Parameters
+    ----------
+    sig : 1D numpy.ndarray
+        One-dimensional signal for downsampling.
+    d_factor : int, range(1, inf)
+        Downsampling factor. Must be higher than 0.
+
+    Returns
+    -------
+    d_sig : 1D numpy.ndarray
+        One-dimensional signal downsampled lineary by factor equal to 'd_factor'.
+    """
+    if (isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(d_factor, int) and d_factor >= 1):
+        d_sig = sig.reshape(-1, d_factor).mean(axis=1)
+        return d_sig
+    else:
+        raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
+
 def filtfilt_butterworth(sig, sf, cf, order=1, btype='bandpass'):
     """Two-sided Butterworth filter.
     
@@ -215,7 +161,7 @@ def filtfilt_butterworth(sig, sf, cf, order=1, btype='bandpass'):
     sig : numpy.ndarray
         Signal to filter.
     sf : int
-        Signal Sampling frequecy.
+        Signal sampling frequecy (number of samples per second).
     cf : float | list of float of length 2
         Filter frequencies. When using btype 'lowpass' or 'highpass' use single float. When using btype 'bandstop'
         or 'bandpass' use list of float of length 2.
@@ -266,58 +212,145 @@ def upsample(sig, i_factor):
     else:
         raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
 
-def downsample(sig, d_factor):
-    """Downsample one-dimensional signal with the use of reshaping.
+# SIGNAL CREATION
+def create_sawtooth_pulse(duration, sf, amp, first_peak='positive'):
+    """Create one-period sawtooth pulse.
 
     Parameters
     ----------
-    sig : 1D numpy.ndarray
-        One-dimensional signal for downsampling.
-    d_factor : int, range(1, inf)
-        Downsampling factor. Must be higher than 0.
+    duration : float
+        Duration of the pulse in seconds. Must be > 0.
+    sf : int
+        Sampling frequency of the pulse (number of samples per second). Must be > 0.
+    amp : float
+        Amplitude of the pulse in microamperes (uA). Must be > 0.
+    first_peak : str
+        Polarity of the first pulse hillock. Available options: 'positive', 'negative'. Default value is 'positive'.
 
     Returns
     -------
-    d_sig : 1D numpy.ndarray
-        One-dimensional signal downsampled lineary by factor equal to 'd_factor'.
+    pulse : 1D numpy.ndarray
+        One-period sawtooth pulse.
     """
-    if (isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(d_factor, int) and d_factor >= 1):
-        d_sig = sig.reshape(-1, d_factor).mean(axis=1)
-        return d_sig
+    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
+        and amp > 0 and first_peak in ['positive', 'negative']):
+
+        time_scale = np.arange(0, duration, 1 / sf)
+        frequency = 1 / duration
+        pulse = scisig.sawtooth(2 * np.pi * frequency * time_scale) * (amp / 2)
+        if first_peak == 'negative':
+            pulse *= -1
+        return pulse
     else:
-        raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
+        raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
+
+def create_square_pulse(duration, sf, amp, first_peak='positive'):
+    """Create one-period squarewave pulse.
+
+    Parameters
+    ----------
+    duration : float
+        Duration of the pulse in seconds. Must be > 0.
+    sf : int
+        Sampling frequency of the pulse (number of samples per second). Must be > 0.
+    amp : float
+        Amplitude of the pulse in microamperes (uA). Must be > 0.
+    first_peak : str
+        Polarity of the first pulse hillock. Available options: 'positive', 'negative'. Default value is 'positive'.
+
+    Returns
+    -------
+    pulse : 1D numpy.ndarray
+        One-period squarewave pulse.
+    """
+    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
+        and amp > 0 and first_peak in ['positive', 'negative']):
+        
+        time_scale = np.arange(0, duration, 1 / sf)
+        frequency = 1 / duration
+        pulse = scisig.square(2 * np.pi * frequency * time_scale) * (amp / 2)
+        if first_peak == 'negative':
+            pulse *= -1
+        return pulse
+    else:
+        raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
+
+# SIMPLE CALCULATIONS
+def create_time_scale(n_samples, sf, unit='s'):
+    """Create one-dimensional time scale.
+
+    Parameters
+    ----------
+    n_samples : int
+        Total number of samples in the signal for which time scale has to be created.
+    sf : int
+        Sampling frequency of the signal, ie. number of samples per second.
+    unit : str
+        Time unit in which time scale has to be expressed. Available units: hours 'h', minutes 'min', seconds 's',
+        milliseconds 'ms', microseconds 'us', nanoseconds 'ns'. Default value is 's'.
+    
+    Returns
+    -------
+    time_scale : 1D np.ndarray
+        One-dimensional time scale with values expressed in a specific time unit.
+    """
+    if (isinstance(n_samples, int) and isinstance(sf, int) and unit in ['h', 'min', 's', 'ms', 'us', 'ns']):
+        unit_convertion = {'h':3600, 'min':60, 's':1, 'ms':0.001, 'us':0.000001, 'ns':0.000000001}
+        total_time_in_unit = (n_samples / sf) / unit_convertion[unit]
+        dt = (1 / sf) / unit_convertion[unit]
+        time_scale = np.arange(0, total_time_in_unit, dt)
+        return time_scale
+    else:
+        raise ValueError("Innapriopriate type or value of one of the arguments. Please read carefully function docstring.")
+
+def list_is_int(list_of_ints):
+    """Check whether given list contains only int values.
+
+    Parameters
+    ----------
+    list_of_ints : list
+        List of presumably only int values.
+
+    Returns
+    -------
+    verdict : boolean
+        Return True, if 'list_of_ints" contains only in values. Otherwise, return False.
+    """
+    if (isinstance(list_of_ints, list) and len(list_of_ints) > 0):
+        for item in list_of_ints:
+            if not isinstance(item, int):
+                return False
+        return True 
+    else:
+        raise ValueError("Inappropriate type or size of the argument.")
+
+def ndarray_contains_only(ndarray, values):
+    """Check whether numpy.ndarray contains only some specific values.
+
+    Parameters
+    ----------
+    ndarray : numpy.ndarray
+        One-dimensional array.
+    values : 1D numpy.ndarray
+        One-dimensional array with values to check whether they occur in 'ndarray'.
+
+    Returns
+    -------
+    verdict : boolean
+        Return True, if 'ndarray' contains only 'values'. Otherwise, return False.
+
+    """
+    if (isinstance(ndarray, np.ndarray) and ndarray.ndim == 1 and isinstance(values, np.ndarray) and values.ndim == 1):
+        mask = np.isin(ndarray, values)
+        matches = np.sum(mask)
+        if matches != ndarray.size:
+            return False
+        else:
+            return True
+    else:
+        raise ValueError("Inappropriate type or shape of the argument.")
 
 # TRANSFORMATIONS AND CORRECTIONS
-def spectrum(sig, time_scale, abs=True):
-    """Compute the one-dimensional Discrete Fourier Transform (DFT) for given N-dimensional signal.
-
-    Parameters
-    ----------
-    sig : numpy.ndarray
-        Signal for DFT (can be complex).
-    time_scale : 1D numpy.ndarray
-        One-dimensional time scale in seconds.
-    abs : boolean
-        If True, the result of DFT will be absolute. If False, the result of DFT will be complex. Default value is True.
-
-    Returns
-    -------
-    freqs : 1D numpy.ndarray
-        One-dimensional array containing information about the signal frequencies.
-    fft : numpy.ndarray or complex numpy.ndarray
-        One-dimensional array containing the result of DFT. If parameter 'abs' is equal to False, the result will
-        be complex numpy.ndarray.
-    """
-    if (isinstance(sig, np.ndarray) and isinstance(time_scale, np.ndarray) and time_scale.ndim == 1):
-        freqs = scifft.fftfreq(sig.size, d=time_scale[1]-time_scale[0])
-        fft = np.fft.fft(sig)
-        if abs:
-            return freqs, np.abs(fft)
-        else:
-            return freqs, fft
-    else:
-        raise ValueError("Inappropriate type or shape of one of the arguments. Please read carefully function docstring.")
-
 def baseline_correction(sig, b_window, c_window, b_type='absolute'):
     """Perform baseline correction on a given one-dimensional signal.
 
@@ -400,3 +433,33 @@ def hanning_correction(sig, c_window, mode='full'):
         return sig
     else:
         raise ValueError("Inappropriate type, value or shape of one of the arguments. Please read carefully function docstring.")
+
+def spectrum(sig, time_scale, abs=True):
+    """Compute the one-dimensional Discrete Fourier Transform (DFT) for given N-dimensional signal.
+
+    Parameters
+    ----------
+    sig : numpy.ndarray
+        Signal for DFT (can be complex).
+    time_scale : 1D numpy.ndarray
+        One-dimensional time scale in seconds.
+    abs : boolean
+        If True, the result of DFT will be absolute. If False, the result of DFT will be complex. Default value is True.
+
+    Returns
+    -------
+    freqs : 1D numpy.ndarray
+        One-dimensional array containing information about the signal frequencies.
+    fft : numpy.ndarray or complex numpy.ndarray
+        One-dimensional array containing the result of DFT. If parameter 'abs' is equal to False, the result will
+        be complex numpy.ndarray.
+    """
+    if (isinstance(sig, np.ndarray) and isinstance(time_scale, np.ndarray) and time_scale.ndim == 1):
+        freqs = scifft.fftfreq(sig.size, d=time_scale[1]-time_scale[0])
+        fft = np.fft.fft(sig)
+        if abs:
+            return freqs, np.abs(fft)
+        else:
+            return freqs, fft
+    else:
+        raise ValueError("Inappropriate type or shape of one of the arguments. Please read carefully function docstring.")
