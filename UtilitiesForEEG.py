@@ -244,6 +244,37 @@ def create_sawtooth_pulse(duration, sf, amp, first_peak='positive'):
     else:
         raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
 
+def create_sin_pulse(dration, sf, amp, first_peak='positive'):
+    """Create one-period sinusoidal pulse.
+
+    Parameters
+    ----------
+    duration : float
+        Duration of the pulse in seconds. Must be > 0.
+    sf : int 
+        Sampling frequency of the pulse (number of samples per second). Must be > 0.
+    amp : float
+        Amplitude of the pulse in microapers (uA). Must be > 0.
+    first_peak : str
+        Polarity of the first pulse hillock. Available options: 'positive', 'negative'. Default value is 'positive'.
+
+    Returns
+    -------
+    pulse : 1D numpy.ndarray
+        One-period sinusoidal pulse.
+    """
+    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
+        and amp > 0 and first_peak in ['positive', 'negative']):
+
+        time_scale = np.arange(0, duration, 1 / sf)
+        frequency = 1 / duration
+        pulse = scisig.sin(2 * np.pi * frequency * time_scale) * (amp / 2)
+        if first_peak == 'negative':
+            pulse *= -1
+        return pulse
+    else:
+        raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
+
 def create_square_pulse(duration, sf, amp, first_peak='positive'):
     """Create one-period squarewave pulse.
 
