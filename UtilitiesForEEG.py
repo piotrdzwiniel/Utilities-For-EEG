@@ -287,7 +287,7 @@ def downsample(sig, d_factor):
     else:
         raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
 
-# TRANSFORMATIONS
+# TRANSFORMATIONS AND CORRECTIONS
 def spectrum(sig, time_scale, abs=True):
     """Compute the one-dimensional Discrete Fourier Transform (DFT) for given N-dimensional signal.
 
@@ -329,7 +329,7 @@ def baseline_correction(sig, b_window, c_window, b_type='absolute'):
         Range of the 'sig' samples from which baseline should be calculated. Minimum and maximum range 
         is [0, sig.size-1].
     c_window : list of int of length 2
-        Range of the 'sig' samples which should be baseline corrected.
+        Range of the 'sig' samples which should be baseline-corrected. Minimum and maximum range is [0, sig.size-1].
     b_type : str
         Type of baseline. Available options: 'absolute', 'relative', 'relchange', 'decibel' (based on 
         http://bjornherrmann.com/baseline_correction.html). Default values is 'absolute'. For 'X' is the signal 
@@ -345,9 +345,9 @@ def baseline_correction(sig, b_window, c_window, b_type='absolute'):
     corrected : numpy.ndarray
         Baseline-corrected signal.
     """
-    if (isinstance(sig, np.ndarray) and isinstance(b_window, list) and list_is_int(b_window) and len(b_window) in range(1, 3) 
-        and isinstance(c_window, list) and list_is_int(c_window) and len(c_window) in range(1, 3) 
-        and b_type in ['absolute', 'relative', 'relchange', 'decibel']):
+    if (isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(b_window, list) and list_is_int(b_window) 
+        and len(b_window) in range(1, 3) and isinstance(c_window, list) and list_is_int(c_window) 
+        and len(c_window) in range(1, 3) and b_type in ['absolute', 'relative', 'relchange', 'decibel']):
         
         baseline = np.mean(sig[b_window[0]:b_window[1]])
 
@@ -362,4 +362,41 @@ def baseline_correction(sig, b_window, c_window, b_type='absolute'):
 
         return sig
     else:
-        raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
+        raise ValueError("Inappropriate type, value or shape of one of the arguments. Please read carefully function docstring.")
+
+def hanning_correction(sig, c_window, mode='full'):
+    """
+    Parameters
+    ----------
+    sig : 1D numpy.ndarray
+        One-dimensional signal.
+    c_window : list of int of length 2
+        Range of the 'sig' samples which should be Hanning-corrected. Minimum and maximum range is [0, sig.size-1].
+    mode : str
+        Mode of the Hanning correction. There are three available modes: 'half-left', 'half-right', 'full'. 
+        Default value is 'full'. Modes description:
+        1. 'half-left' - only half left part of the Hanning window is used for the correction.
+        2. 'half-right' - only half right part of the Hanning window is used for the correction.
+        3. 'full' - full Hanning window is used for the correction.
+
+    Returns
+    -------
+    corrected : 1D numpy.ndarray
+        Hanning-corrected signal.
+    """
+    if (isinstance(sig, np.ndarray) and sig.ndim == 1 and list_is_int(c_window) and len(c_window) in range(1, 3)
+        and mode in ['half-left', 'half-right', 'full']):
+        
+        c_window_size = sig[c_window[0]:c_window[1]].size
+        if mode == 'half-left':
+            hann = np.hanning(c_window_size * 2)[:c_window_size]
+            sig[c_window[0]:c_window[1]] = np.multiply(sig[c_window[0]:c_window[1]], hann)
+        elif mode == 'half-right':
+            hann = np.hanning(c_window_size * 2)[c_window_size:]
+            sig[c_window[0]:c_window[1]] = np.multiply(sig[c_window[0]:c_window[1]], hann)
+        else:
+            hann = np.hanning(c_window_size)
+            sig[c_window[0]:c_window[1]] = np.multiply(sig[c_window[0]:c_window[1]], hann)
+        return sig
+    else:
+        raise ValueError("Inappropriate type, value or shape of one of the arguments. Please read carefully function docstring.")
