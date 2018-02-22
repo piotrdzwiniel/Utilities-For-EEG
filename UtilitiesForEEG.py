@@ -317,3 +317,49 @@ def spectrum(sig, time_scale, abs=True):
             return freqs, fft
     else:
         raise ValueError("Inappropriate type or shape of one of the arguments. Please read carefully function docstring.")
+
+def baseline_correction(sig, b_window, c_window, b_type='absolute'):
+    """Perform baseline correction on a given one-dimensional signal.
+
+    Parameters
+    ----------
+    sig : 1D numpy.ndarray
+        One-dimensional signal for which baseline correction has to be performed.
+    b_window : list of int of length 2
+        Range of the 'sig' samples from which baseline should be calculated. Minimum and maximum range 
+        is [0, sig.size-1].
+    c_window : list of int of length 2
+        Range of the 'sig' samples which should be baseline corrected.
+    b_type : str
+        Type of baseline. Available options: 'absolute', 'relative', 'relchange', 'decibel' (based on 
+        http://bjornherrmann.com/baseline_correction.html). Default values is 'absolute'. For 'X' is the signal 
+        and for 'B' is the baseline calculated as mean(sig[window[0]:window[1]]):
+        1. 'absolute' - absolute baseline, range of possible values: [-inf, inf], calculated as X - B;
+        2. 'relative' - relative baseline, range of possible values: [0, inf], calculated as X / B;
+        3. 'relchange' - relative change baseline, range of possible values: [-1, inf], calculated as (X - B) / B;
+        4. 'decibel' - decibel baseline (defined only for power), range of possible values: [-inf, inf], calculated as
+        10 * log10(X / B).
+
+    Returns
+    -------
+    corrected : numpy.ndarray
+        Baseline-corrected signal.
+    """
+    if (isinstance(sig, np.ndarray) and isinstance(b_window, list) and list_is_int(b_window) and len(b_window) in range(1, 3) 
+        and isinstance(c_window, list) and list_is_int(c_window) and len(c_window) in range(1, 3) 
+        and b_type in ['absolute', 'relative', 'relchange', 'decibel']):
+        
+        baseline = np.mean(sig[b_window[0]:b_window[1]])
+
+        if b_type == 'absolute':
+            sig[c_window[0]:c_window[1]] -= baseline
+        elif b_type == 'relative':
+            sig[c_window[0]:c_window[1]] /= baseline
+        elif b_type == 'relchange':
+            sig[c_window[0]:c_window[1]] = (sig[c_window[0]:c_window[1]] - baseline) / baseline
+        else:
+            sig[c_window[0]:c_window[1]] = 10 * np.log10(sig[c_window[0]:c_window[1]] / baseline)
+
+        return sig
+    else:
+        raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
