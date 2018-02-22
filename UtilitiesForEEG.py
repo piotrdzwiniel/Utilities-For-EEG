@@ -244,7 +244,7 @@ def create_sawtooth_pulse(duration, sf, amp, first_peak='positive'):
     else:
         raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
 
-def create_sin_pulse(dration, sf, amp, first_peak='positive'):
+def create_sin_pulse(duration, sf, amp, first_peak='positive'):
     """Create one-period sinusoidal pulse.
 
     Parameters
