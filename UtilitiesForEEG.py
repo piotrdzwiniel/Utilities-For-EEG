@@ -6,6 +6,7 @@
 import scipy.signal as scisig
 import numpy as np
 import scipy.fftpack as scifft
+import math
 
 # ARTIFACTS REMOVAL
 def remove_current_pulse_artifacts(sig, markers, window, n_draws, return_artifacts=False):
@@ -355,7 +356,6 @@ def create_alternating_signal(duration, sf, freq, amp, s_type='sinusoidal', firs
         return sig
     else:
         raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
-
 
 # SIMPLE CALCULATIONS
 def create_time_scale(n_samples, sf, unit='s'):
