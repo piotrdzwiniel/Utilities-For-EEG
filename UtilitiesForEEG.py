@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 19 21:55:11 2018
-
-@author: pdzwiniel
-@python_version: 3.6
+@author: Piotr Dzwiniel
+@python_version: 3.6.4
 """
 import scipy.signal as scisig
 import numpy as np
@@ -213,13 +211,13 @@ def upsample(sig, i_factor):
         raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
 
 # SIGNAL CREATION
-def create_sawtooth_pulse(duration, sf, amp, first_peak='positive'):
+def create_sawtooth_pulse(freq, sf, amp, first_peak='positive'):
     """Create one-period sawtooth pulse.
 
     Parameters
     ----------
-    duration : float
-        Duration of the pulse in seconds. Must be > 0.
+    freq : float
+        Frequency of the pulse wave in Hz. Must be > 0.
     sf : int
         Sampling frequency of the pulse (number of samples per second). Must be > 0.
     amp : float
@@ -232,25 +230,25 @@ def create_sawtooth_pulse(duration, sf, amp, first_peak='positive'):
     pulse : 1D numpy.ndarray
         One-period sawtooth pulse.
     """
-    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
+    if (isinstance(freq, float) and freq > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
         and amp > 0 and first_peak in ['positive', 'negative']):
 
+        duration = 1 / freq
         time_scale = np.arange(0, duration, 1 / sf)
-        frequency = 1 / duration
-        pulse = scisig.sawtooth(2 * np.pi * frequency * time_scale) * (amp / 2)
+        pulse = scisig.sawtooth(2 * np.pi * freq * time_scale) * (amp / 2)
         if first_peak == 'negative':
             pulse *= -1
         return pulse
     else:
         raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
 
-def create_sin_pulse(duration, sf, amp, first_peak='positive'):
+def create_sin_pulse(freq, sf, amp, first_peak='positive'):
     """Create one-period sinusoidal pulse.
 
     Parameters
     ----------
-    duration : float
-        Duration of the pulse in seconds. Must be > 0.
+    freq : float
+        Frequency of the pulse wave in Hz. Must be > 0.
     sf : int 
         Sampling frequency of the pulse (number of samples per second). Must be > 0.
     amp : float
@@ -263,25 +261,25 @@ def create_sin_pulse(duration, sf, amp, first_peak='positive'):
     pulse : 1D numpy.ndarray
         One-period sinusoidal pulse.
     """
-    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
+    if (isinstance(freq, float) and freq > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
         and amp > 0 and first_peak in ['positive', 'negative']):
 
+        duration = 1 / freq
         time_scale = np.arange(0, duration, 1 / sf)
-        frequency = 1 / duration
-        pulse = scisig.sin(2 * np.pi * frequency * time_scale) * (amp / 2)
+        pulse = scisig.sin(2 * np.pi * freq * time_scale) * (amp / 2)
         if first_peak == 'negative':
             pulse *= -1
         return pulse
     else:
         raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
 
-def create_square_pulse(duration, sf, amp, first_peak='positive'):
+def create_square_pulse(freq, sf, amp, first_peak='positive'):
     """Create one-period squarewave pulse.
 
     Parameters
     ----------
-    duration : float
-        Duration of the pulse in seconds. Must be > 0.
+    freq : float
+        Frequency of the pulse wave in Hz. Must be > 0.
     sf : int
         Sampling frequency of the pulse (number of samples per second). Must be > 0.
     amp : float
@@ -294,17 +292,70 @@ def create_square_pulse(duration, sf, amp, first_peak='positive'):
     pulse : 1D numpy.ndarray
         One-period squarewave pulse.
     """
-    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
+    if (isinstance(freq, float) and freq > 0 and isinstance(sf, int) and sf > 0 and isinstance(amp, float) 
         and amp > 0 and first_peak in ['positive', 'negative']):
         
+        duration = 1 / freq
         time_scale = np.arange(0, duration, 1 / sf)
-        frequency = 1 / duration
-        pulse = scisig.square(2 * np.pi * frequency * time_scale) * (amp / 2)
+        pulse = scisig.square(2 * np.pi * freq * time_scale) * (amp / 2)
         if first_peak == 'negative':
             pulse *= -1
         return pulse
     else:
         raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
+
+def create_alternating_signal(duration, sf, freq, amp, s_type='sinusoidal', first_peak='positive'):
+    """Create alternating signal.
+
+    Parameters
+    ----------
+    duration : float
+        Duration of the signal in seconds. Must be > 0.
+    sf : int
+        Sampling frequency of the pulse (number of samples per second). Must be > 0.
+    freq : float
+        Frequency of the signal in Hz.
+    amp : float
+        Amplitude of the pulse in microampers (uA). Must be > 0.
+    s_type : str
+        Type of the wave used in the signal creation. Available types: 'sawtooth', sinusoidal', 'square'. 
+        Default value is 'sinusoidal'.
+    first_peak : str
+        Polarity of the first pulse hillock. Available options: 'positive', 'negative'. Default value is 'positive'.
+
+    Returns
+    -------
+    sig : 1D numpy.ndarray
+        Created one-dimensional alternating signal.
+    """
+    if (isinstance(duration, float) and duration > 0 and isinstance(sf, int) and sf > 0 and isinstance(freq, float) 
+        and freq > 0 and isinstance(amp, float) and amp > 0 and s_type in ['sawtooth', 'sinusoidal', 'square']
+        and first_peak in ['positive', 'negative'] and duration * sf >= 1):
+        
+        temp_sig = []
+        pulse_time_in_s = 1 / freq
+        n_pulses = int(math.ceil(duration / pulse_time_in_s))
+        if s_type == 'sawtooth':
+            for i in np.arange(n_pulses):
+                pulse = create_sawtooth_pulse(freq, sf, amp, first_peak=first_peak)
+                temp_sig.append(pulse)
+        elif s_type == 'sinusoidal':
+            for i in np.arange(n_pulses):
+                pulse = create_sin_pulse(freq, sf, amp, first_peak=first_peak)
+                temp_sig.append(pulse)
+        else:
+            for i in np.arange(n_pulses):
+                pulse = create_square_pulse(freq, sf, amp, first_peak=first_peak)
+                temp_sig.append(pulse)
+        temp_sig = np.asarray(temp_sig).reshape(-1)
+
+        sig = np.zeros(np.around(duration * sf, decimals=0))
+        sig = temp_sig[:sig.size]
+
+        return sig
+    else:
+        raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
+
 
 # SIMPLE CALCULATIONS
 def create_time_scale(n_samples, sf, unit='s'):
