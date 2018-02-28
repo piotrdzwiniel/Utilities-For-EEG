@@ -1,9 +1,9 @@
 # Utilities-For-EEG
 This repository contains python (v3.6.4) scripts with various utilities for EEG signal preprocessing and analysis, as well as bunch of different functionalities, like generating artificial signals. Below is list of scripts and key defined functions with short description.
 
-<h3>Script UtilitiesForEEG.py</h3>
+<h2>Script UtilitiesForEEG.py</h2>
 <h4>Artifacts Removal</h4>
-`remove_current_pulse_artifacts` - Remove current pulse artifacts from one-dimensional signal based on artifacts occurences represented by one-dimensional markers signal.
+'remove_current_pulse_artifacts' - Remove current pulse artifacts from one-dimensional signal based on artifacts occurences represented by one-dimensional markers signal.
 
 <h4>Exploration and Marking</h4>
 `mark_photodiode_changes` - Create one-dimensional array of zeros and ones, where ones indicate where photodiode exceeds some specific threshold value. This one-dimensional array is the same length as photodiode signal.
