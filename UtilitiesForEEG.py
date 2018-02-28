@@ -77,8 +77,8 @@ def remove_current_pulse_artifacts(sig, markers, window, n_draws, return_artifac
 
 # EXPLORATION AND MARKING
 def mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-right'):
-    """Create 1D-array of zeros and ones, where ones indicate places where photodiode signal exceeds some
-    specific threshold value. This 1D-array is the same length as photodiode signal.
+    """Create one-dimensional array of zeros and ones, where ones indicate places where photodiode signal exceeds some
+    specific threshold value. This one-dimensional array is the same length as photodiode signal.
     
     Parameters
     ----------
@@ -275,7 +275,7 @@ def create_sin_pulse(freq, sf, amp, first_peak='positive'):
         raise ValueError("Inappriopriate type or value of one of the arguments. Please read carefully function docstring.")
 
 def create_square_pulse(freq, sf, amp, first_peak='positive'):
-    """Create one-period squarewave pulse.
+    """Create one-period square pulse.
 
     Parameters
     ----------
@@ -306,7 +306,7 @@ def create_square_pulse(freq, sf, amp, first_peak='positive'):
         raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
 
 def create_alternating_signal(duration, sf, freq, amp, s_type='sinusoidal', first_peak='positive'):
-    """Create alternating signal.
+    """Create one-dimensional alternating signal using sawtooth, sinusoidal or square wave.
 
     Parameters
     ----------
@@ -480,7 +480,8 @@ def baseline_correction(sig, b_window, c_window, b_type='absolute'):
         raise ValueError("Inappropriate type, value or shape of one of the arguments. Please read carefully function docstring.")
 
 def hanning_correction(sig, c_window, mode='full'):
-    """
+    """Perform Hanning window correction on a given one-dimensional signal.
+
     Parameters
     ----------
     sig : 1D numpy.ndarray
