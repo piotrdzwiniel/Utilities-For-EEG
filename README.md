@@ -6,7 +6,7 @@ This repository contains python (v3.6.4) scripts with various utilities for EEG 
 'remove_current_pulse_artifacts' - Remove current pulse artifacts from one-dimensional signal based on artifacts occurences represented by one-dimensional markers signal.
 
 <h4>Exploration and Marking</h4>
-Test `mark_photodiode_changes` - Create one-dimensional array of zeros and ones, where ones indicate where photodiode exceeds some specific threshold value. This one-dimensional array is the same length as photodiode signal.
+<code>mark_photodiode_changes</code> - Create one-dimensional array of zeros and ones, where ones indicate where photodiode exceeds some specific threshold value. This one-dimensional array is the same length as photodiode signal.
 
 <h4>Filtering, Smoothing, Up- and Downsampling</h4>
 `downsample` - Downsample one-dimensional signal with the use of reshaping.
