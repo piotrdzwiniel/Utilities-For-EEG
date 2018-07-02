@@ -3,7 +3,7 @@
 @author: Piotr Dzwiniel
 @python_version: 3.6.4
 """
-import scipy.signal as scisig
+from scipy import signal as scisig
 import numpy as np
 import scipy.fftpack as scifft
 import math
@@ -159,7 +159,7 @@ def filtfilt_butterworth(sig, sf, cf, order=1, btype='bandpass'):
     ----------
     sig : numpy.ndarray
         Signal to filter.
-    sf : int
+    sf : float
         Signal sampling frequecy (number of samples per second).
     cf : float | list of float of length 2
         Filter frequencies. When using btype 'lowpass' or 'highpass' use single float. When using btype 'bandstop'
@@ -174,9 +174,10 @@ def filtfilt_butterworth(sig, sf, cf, order=1, btype='bandpass'):
     filtered : numpy.ndarray
         Filtered sig.
     """
-    if (isinstance(sig, np.ndarray) and isinstance(sf, int) and sf >= 1 and isinstance(cf, list) 
+    if (isinstance(sig, np.ndarray) and isinstance(sf, float) and sf > 0 and isinstance(cf, list) 
         and len(cf) in range(1, 3) and isinstance(order, int) and order in range(1, 6)
         and btype in ['lowpass', 'highpass', 'bandstop', 'bandpass']):
+        
         if btype == 'highpass' or btype == 'lowpass':
             b, a = scisig.butter(order, Wn=cf / (0.5 * sf), btype=btype, analog=0, output='ba')
             return scisig.filtfilt(b, a, sig)
@@ -267,7 +268,7 @@ def create_sin_pulse(freq, sf, amp, first_peak='positive'):
 
         duration = 1 / freq
         time_scale = np.arange(0, duration, 1 / sf)
-        pulse = scisig.sin(2 * np.pi * freq * time_scale) * (amp / 2)
+        pulse = np.sin(2 * np.pi * freq * time_scale) * (amp / 2)
         if first_peak == 'negative':
             pulse *= -1
         return pulse
@@ -334,7 +335,7 @@ def create_alternating_signal(duration, sf, freq, amp, s_type='sinusoidal', firs
         and first_peak in ['positive', 'negative'] and duration * sf >= 1):
         
         temp_sig = []
-        pulse_time_in_s = 1 / freq
+        pulse_time_in_s = 1.0 / freq
         n_pulses = int(math.ceil(duration / pulse_time_in_s))
         if s_type == 'sawtooth':
             for i in np.arange(n_pulses):
@@ -350,7 +351,7 @@ def create_alternating_signal(duration, sf, freq, amp, s_type='sinusoidal', firs
                 temp_sig.append(pulse)
         temp_sig = np.asarray(temp_sig).reshape(-1)
 
-        sig = np.zeros(np.around(duration * sf, decimals=0))
+        sig = np.zeros(int(np.around(duration * sf, decimals=0)))
         sig = temp_sig[:sig.size]
 
         return sig
