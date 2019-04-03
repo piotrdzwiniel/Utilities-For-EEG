@@ -61,7 +61,11 @@ def remove_current_pulse_artifacts(sig, markers, window, n_draws, return_artifac
         iterator = 0
         for marker in markers:
             if marker == 1:
-                random_artifact_indices = np.random.choice(np.arange(artifacts.size), n_draws, replace=False)
+
+                if n_draws > np.shape(artifacts)[0]:
+                    n_draws = np.shape(artifacts)[0]
+
+                random_artifact_indices = np.random.choice(np.arange(np.shape(artifacts)[0]), n_draws, replace=False)
                 avg_artifact = np.mean(np.take(artifacts, random_artifact_indices, axis=0), axis=0)
                 sig[iterator-window[0]:iterator+window[1]] -= avg_artifact
             iterator += 1
@@ -98,12 +102,11 @@ def mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-r
     markers : 1D numpy.ndarray
         Array of zeros and ones, where ones are markers.
     """
-    if (isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(threshold, float) and isinstance(wait_n_samples, int) 
-        and wait_n_samples >= 0 and direction in ['left-to-right', 'right-to-left', 'both']):
+    if (isinstance(sig, np.ndarray) and sig.ndim == 1 and isinstance(threshold, float) and isinstance(wait_n_samples, int) and wait_n_samples >= 0 and direction in ['left-to-right', 'right-to-left', 'both']):
         if direction == 'left-to-right':
             markers = np.zeros(len(sig))
-            iterator = 0
             wait_until_next_mark = wait_n_samples
+            iterator = 0
             for sample in sig:
                 if sample > threshold and wait_until_next_mark >= wait_n_samples:
                     markers[iterator] = 1
@@ -113,7 +116,7 @@ def mark_photodiode_changes(sig, threshold, wait_n_samples, direction='left-to-r
             return markers
         elif direction == 'right-to-left':
             markers = np.zeros(len(sig))
-            iterator = len(sig)
+            iterator = len(sig)-1
             wait_until_next_mark = wait_n_samples
             for sample in reversed(sig):
                 if sample > threshold and wait_until_next_mark >= wait_n_samples:
@@ -359,6 +362,26 @@ def create_alternating_signal(duration, sf, freq, amp, s_type='sinusoidal', firs
         raise ValueError("Inappropriate type or value of one of the arguments. Please read carefully function docstring.")
 
 # SIMPLE CALCULATIONS
+def z_score(x, avg, sd):
+    """Calculate z-score.
+
+    Parameters
+    ----------
+    x : float
+        Standardized variable..
+    avg : float
+        Average from population.
+    sd : float
+        Standard deviation from population.
+
+    Returns
+    -------
+    z : float
+        Z-score.
+    """
+    return (x - avg) / sd
+
+
 def create_time_scale(n_samples, sf, unit='s'):
     """Create one-dimensional time scale.
 
