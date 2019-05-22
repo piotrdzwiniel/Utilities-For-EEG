@@ -215,6 +215,24 @@ def upsample(sig, i_factor):
     else:
         raise ValueError("Inappropriate type, shape or value of one of the arguments. Please read carefully function docstring.")
 
+# MUTUAL INFORMATION
+def shannon_entropy(data):
+    """Calculate Shannon's entropy.
+
+    Parameters
+    ----------
+    data : 1D numpy.ndarray
+        Discrete data serie.
+
+    Returns
+    -------
+    shannon_entropy : 1D numpy.ndarray
+        Shanon entropy.
+    """
+    hist, _ = np.histogram(data)
+    probability = hist / hist.sum()
+    return -np.sum(probability*np.log2(probability))
+
 # SIGNAL CREATION
 def create_sawtooth_pulse(freq, sf, amp, first_peak='positive'):
     """Create one-period sawtooth pulse.
