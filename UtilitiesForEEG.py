@@ -399,7 +399,6 @@ def z_score(x, avg, sd):
     """
     return (x - avg) / sd
 
-
 def create_time_scale(n_samples, sf, unit='s'):
     """Create one-dimensional time scale.
 
@@ -588,3 +587,27 @@ def spectrum(sig, time_scale, abs=True):
             return freqs, fft
     else:
         raise ValueError("Inappropriate type or shape of one of the arguments. Please read carefully function docstring.")
+
+# FREQUENCY ANALYSIS
+def itpc(k, rayleigh_z=False):
+    """Compute inter-trial phase clustering (ITPC) for a vector of phase angles at one time-frequency point over trials.
+
+    Parameters
+    ----------
+    k : 1D numpy.ndarray
+        Vector of phase angles at one time-frequency point over trials
+    rayleigh_z : boolean
+        If True transform ITPC to ITPC-Z, also known as Rayleigh's Z. If False compute default ITPC.
+
+    Returns
+    -------
+    itpc : float
+        If rayleigh_z was False return default ITPC value between 0.0 and 1.0.
+        If rayleigh_z was True return ITPC-Z value which is > 0.0.
+    """
+    if rayleigh_z:
+        return len(k) * np.abs(np.mean(np.exp(1j * k))) ** 2
+    else:
+        return np.abs(np.mean(np.exp(1j*k)))
+
+
