@@ -660,6 +660,12 @@ def itpc(k, rayleigh_z=False):
 
 # OTHER
 def phase_shift_in_degrees(time_difference, wave_period):
+    """
+    Calculate phase shift in degrees based on time difference and wave period.
+    :param time_difference: 
+    :param wave_period: 
+    :return: 
+    """
     return 360 * time_difference / wave_period
 
 def wave_period_in_seconds(wave_frequency_in_hz):
