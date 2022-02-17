@@ -828,6 +828,13 @@ def get_file_names_from_path(path, file_type='.txt'):
 
 
 def superimpose_two_vectors(a, b, shift=0):
+    """
+    Superimpose two vectors with the same or different lengths with a possible shift between two.
+    :param a: Vector 1.
+    :param b: Vector 2.
+    :param shift: Shift in samples between two vectors.
+    :return: Vector.
+    """
     if len(a) < len(b):
         c = b.copy()
         c[shift:shift+len(a)] += a
